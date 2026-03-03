@@ -544,10 +544,53 @@ function CoverflowCarousel({ items }: { items: UseCase[] }) {
   );
 }
 
+const DROPDOWNS = [
+  {
+    key: "use-cases",
+    label: "Use cases",
+    options: ["Content Creation", "Content Refresh", "Search and AI Optimization", "Content Repurposing", "Strategy and Analysis", "Research and Intelligence"],
+  },
+  {
+    key: "product",
+    label: "Product",
+    options: ["MCP", "Workflows", "Grids", "Power Agents"],
+  },
+  {
+    key: "integrations",
+    label: "Integrations",
+    options: ["Project Management", "CMS"],
+  },
+  {
+    key: "creator",
+    label: "Creator",
+    options: ["AirOps", "Community"],
+  },
+  {
+    key: "industry",
+    label: "Industry",
+    options: ["Ecommerce", "SaaS", "Travel", "Finance", "Education", "Health"],
+  },
+];
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export function UseCasesPage() {
-  // Default sort: most popular (by popularity seed, which reflects votes)
-  const filteredUseCases = [...useCases].sort((a, b) => b.popularity - a.popularity);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [selectedFilters, setSelectedFilters] = useState<Record<string, string | null>>({});
+  const filtersRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (filtersRef.current && !filtersRef.current.contains(e.target as Node)) {
+        setOpenDropdown(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredUseCases = [...useCases]
+    .filter(uc => !selectedFilters["use-cases"] || uc.tag === selectedFilters["use-cases"])
+    .sort((a, b) => b.popularity - a.popularity);
 
   return (
     <div className="pb-32" style={{ backgroundColor: "#F8FFFB" }}>
@@ -655,78 +698,75 @@ export function UseCasesPage() {
             All workflows
           </h2>
           <div style={{ flex: 1, height: 1, backgroundColor: "rgba(0,41,16,0.08)" }}/>
-          {/* Sort label */}
-          <div
-            className="flex items-center gap-1.5"
-            style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 11,
-              color: "rgba(0,41,16,0.45)",
-              letterSpacing: "0.05em",
-            }}
-          >
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-              <path d="M5 1L9.33 8.5H0.67L5 1Z" fill="rgba(0,41,16,0.35)" />
-            </svg>
-            Most popular
-          </div>
         </div>
 
         {/* Filter dropdowns */}
-        <div className="mb-10 flex flex-wrap gap-2">
-          {[
-            {
-              label: "Jobs to be done",
-              options: ["Content Creation", "Content Refresh", "Search and AI Optimization", "Content Repurposing", "Strategy and Analysis", "Research and Intelligence"],
-            },
-            {
-              label: "Product",
-              options: ["MCP", "Workflows", "Grids", "Power Agents"],
-            },
-            {
-              label: "Platforms / integrations",
-              options: ["Project Management", "CMS"],
-            },
-            {
-              label: "Creator",
-              options: ["AirOps", "Community"],
-            },
-            {
-              label: "Industry",
-              options: ["Ecommerce", "SaaS", "Travel", "Finance", "Education", "Health"],
-            },
-          ].map((dropdown) => (
-            <div key={dropdown.label} className="relative group">
-              <button
-                disabled
-                className="flex cursor-not-allowed items-center gap-1.5 rounded-full px-4 py-2"
-                style={{
-                  fontFamily: "'Inter', sans-serif",
-                  fontWeight: 500,
-                  fontSize: 13.5,
-                  backgroundColor: "white",
-                  color: "rgba(0,41,16,0.4)",
-                  border: "1.5px solid rgba(0,41,16,0.12)",
-                }}
-              >
-                {dropdown.label}
-                <svg width="10" height="6" viewBox="0 0 10 6" fill="none" style={{ opacity: 0.4 }}>
-                  <path d="M1 1L5 5L9 1" stroke="rgba(0,41,16,0.8)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-              {/* Coming soon tooltip */}
-              <div
-                className="pointer-events-none absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs opacity-0 transition-opacity duration-150 group-hover:opacity-100"
-                style={{
-                  fontFamily: "'Inter', sans-serif",
-                  backgroundColor: "#002910",
-                  color: "#00FF64",
-                }}
-              >
-                Coming soon
+        <div ref={filtersRef} className="mb-10 flex flex-wrap gap-2">
+          {DROPDOWNS.map((dropdown) => {
+            const isOpen = openDropdown === dropdown.key;
+            const selected = selectedFilters[dropdown.key] ?? null;
+            return (
+              <div key={dropdown.key} className="relative">
+                <button
+                  onClick={() => setOpenDropdown(isOpen ? null : dropdown.key)}
+                  className="flex cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 transition-all duration-200"
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontWeight: 500,
+                    fontSize: 13.5,
+                    backgroundColor: selected ? "#002910" : "white",
+                    color: selected ? "#00FF64" : "#002910",
+                    border: selected ? "1.5px solid #002910" : "1.5px solid rgba(0,41,16,0.15)",
+                  }}
+                >
+                  {selected ?? dropdown.label}
+                  <svg
+                    width="10" height="6" viewBox="0 0 10 6" fill="none"
+                    style={{ transform: isOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s", opacity: selected ? 0.6 : 0.45 }}
+                  >
+                    <path d="M1 1L5 5L9 1" stroke={selected ? "#00FF64" : "#002910"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+
+                {isOpen && (
+                  <div
+                    className="absolute left-0 top-full z-50 mt-1.5 min-w-[200px] overflow-hidden rounded-xl py-1 shadow-xl"
+                    style={{ backgroundColor: "white", border: "1px solid rgba(0,41,16,0.1)" }}
+                  >
+                    {selected && (
+                      <button
+                        onClick={() => { setSelectedFilters(f => ({ ...f, [dropdown.key]: null })); setOpenDropdown(null); }}
+                        className="flex w-full items-center gap-2 px-4 py-2 text-left text-xs transition-colors duration-100 hover:bg-[rgba(0,41,16,0.04)]"
+                        style={{ fontFamily: "'Inter', sans-serif", color: "rgba(0,41,16,0.4)" }}
+                      >
+                        Clear selection
+                      </button>
+                    )}
+                    {dropdown.options.map(opt => (
+                      <button
+                        key={opt}
+                        onClick={() => { setSelectedFilters(f => ({ ...f, [dropdown.key]: opt })); setOpenDropdown(null); }}
+                        className="flex w-full items-center justify-between px-4 py-2 text-left transition-colors duration-100 hover:bg-[rgba(0,41,16,0.04)]"
+                        style={{
+                          fontFamily: "'Inter', sans-serif",
+                          fontSize: 13.5,
+                          fontWeight: selected === opt ? 600 : 400,
+                          color: selected === opt ? "#002910" : "rgba(0,41,16,0.75)",
+                        }}
+                      >
+                        {opt}
+                        {selected === opt && (
+                          <svg width="12" height="10" viewBox="0 0 12 10" fill="none">
+                            <path d="M1 5L4.5 8.5L11 1" stroke="#002910" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Grid */}

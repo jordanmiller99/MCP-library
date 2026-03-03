@@ -19,7 +19,7 @@ export interface UseCase {
   id: string;
   title: string;
   description: string;
-  category: string;
+  tag: string;
   videoUrl: string;
   complexityScore: number; // 1–5
   popularity: number;      // used for default sort order
@@ -31,14 +31,8 @@ export interface UseCase {
   attribution?: Attribution;
 }
 
-export const categories = [
+export const tags = [
   "All",
-  "SEO & Content",
-  "Sales & CRM",
-  "Engineering",
-  "Marketing",
-  "Support",
-  "Data & Analytics",
   "Analytics & Reporting",
   "Content Optimization",
   "Competitive Intelligence",
@@ -53,7 +47,7 @@ export const useCases: UseCase[] = [
     title: "Generate programmatic SEO pages at scale",
     description:
       "Build thousands of data-driven landing pages — by location, keyword, or product attribute — that rank and convert.",
-    category: "SEO & Content",
+    tag: "Search and AI Optimization",
     videoUrl: "https://www.youtube.com/embed/placeholder-programmatic-seo",
     complexityScore: 4,
     popularity: 892,
@@ -116,7 +110,7 @@ export const useCases: UseCase[] = [
     title: "Research and write AI-powered content briefs",
     description:
       "Pull live SERP data, surface content gaps, and deliver structured briefs your writers can act on immediately.",
-    category: "SEO & Content",
+    tag: "Search and AI Optimization",
     videoUrl: "https://www.youtube.com/embed/placeholder-seo-content-briefs",
     complexityScore: 2,
     popularity: 743,
@@ -179,7 +173,7 @@ export const useCases: UseCase[] = [
     title: "Bulk-optimize meta tags and on-page SEO",
     description:
       "Audit hundreds of pages, rewrite title tags and meta descriptions, and push updates directly to your CMS.",
-    category: "SEO & Content",
+    tag: "Search and AI Optimization",
     videoUrl: "https://www.youtube.com/embed/placeholder-seo-meta-optimization",
     complexityScore: 2,
     popularity: 534,
@@ -230,7 +224,7 @@ export const useCases: UseCase[] = [
     title: "Enrich and score inbound leads in real time",
     description:
       "The moment a lead enters your CRM, AirOps enriches it with firmographics, tech stack, and buying intent — automatically.",
-    category: "Sales & CRM",
+    tag: "Strategy and Analysis",
     videoUrl: "https://www.youtube.com/embed/placeholder-sales-lead-enrichment",
     complexityScore: 3,
     popularity: 534,
@@ -282,7 +276,7 @@ export const useCases: UseCase[] = [
     title: "Personalize outbound sequences at scale",
     description:
       "Craft hyper-relevant emails and LinkedIn touches that reference each prospect's specific context — automatically.",
-    category: "Sales & CRM",
+    tag: "Strategy and Analysis",
     videoUrl: "https://www.youtube.com/embed/placeholder-sales-outreach",
     complexityScore: 3,
     popularity: 589,
@@ -334,7 +328,7 @@ export const useCases: UseCase[] = [
     title: "Automate PR reviews and technical documentation",
     description:
       "Get AI-powered code review comments, auto-generated PR summaries, and documentation that stays in sync with your codebase.",
-    category: "Engineering",
+    tag: "Strategy and Analysis",
     videoUrl: "https://www.youtube.com/embed/placeholder-engineering-code-review",
     complexityScore: 4,
     popularity: 276,
@@ -386,7 +380,7 @@ export const useCases: UseCase[] = [
     title: "Accelerate incident response and post-mortems",
     description:
       "Aggregate logs, metrics, and runbooks instantly to diagnose production incidents and draft post-mortems automatically.",
-    category: "Engineering",
+    tag: "Strategy and Analysis",
     videoUrl: "https://www.youtube.com/embed/placeholder-engineering-incident",
     complexityScore: 5,
     popularity: 78,
@@ -438,7 +432,7 @@ export const useCases: UseCase[] = [
     title: "Generate on-brand campaign copy across every channel",
     description:
       "From a single campaign brief, generate coordinated copy for ads, emails, social, and landing pages — all in your brand voice.",
-    category: "Marketing",
+    tag: "Content Creation",
     videoUrl: "https://www.youtube.com/embed/placeholder-marketing-campaign",
     complexityScore: 2,
     popularity: 687,
@@ -490,7 +484,7 @@ export const useCases: UseCase[] = [
     title: "Repurpose content across formats and channels",
     description:
       "Transform a blog post, webinar, or report into a full library of channel-ready assets — automatically.",
-    category: "Marketing",
+    tag: "Content Creation",
     videoUrl: "https://www.youtube.com/embed/placeholder-content-repurposing",
     complexityScore: 1,
     popularity: 612,
@@ -541,7 +535,7 @@ export const useCases: UseCase[] = [
     title: "Automate support ticket triage and response drafts",
     description:
       "Classify, prioritize, and draft responses for incoming tickets using your knowledge base and CRM data — before an agent touches them.",
-    category: "Support",
+    tag: "Strategy and Analysis",
     videoUrl: "https://www.youtube.com/embed/placeholder-support-ticket-routing",
     complexityScore: 3,
     popularity: 312,
@@ -593,7 +587,7 @@ export const useCases: UseCase[] = [
     title: "Keep your help center automatically up to date",
     description:
       "Detect product changes from release notes and tickets, then draft updated help articles before customers notice the gap.",
-    category: "Support",
+    tag: "Strategy and Analysis",
     videoUrl: "https://www.youtube.com/embed/placeholder-support-knowledge-base",
     complexityScore: 2,
     popularity: 128,
@@ -644,7 +638,7 @@ export const useCases: UseCase[] = [
     title: "Build automated, narrative-rich analytics reports",
     description:
       "Pull data from multiple sources and generate executive-ready reports with charts, trends, and plain-language insights.",
-    category: "Data & Analytics",
+    tag: "Research and Intelligence",
     videoUrl: "https://www.youtube.com/embed/placeholder-data-reporting",
     complexityScore: 3,
     popularity: 389,
@@ -696,7 +690,7 @@ export const useCases: UseCase[] = [
     title: "Detect metric anomalies and alert teams in context",
     description:
       "Monitor your most important KPIs continuously and get intelligent, contextualized alerts the moment something looks off.",
-    category: "Data & Analytics",
+    tag: "Research and Intelligence",
     videoUrl: "https://www.youtube.com/embed/placeholder-data-anomaly",
     complexityScore: 4,
     popularity: 187,
@@ -748,7 +742,7 @@ export const useCases: UseCase[] = [
     title: "Attribute revenue to every marketing touchpoint automatically",
     description:
       "Map every deal back to the campaigns, content, and channels that influenced it — with multi-touch attribution models built in.",
-    category: "Analytics & Reporting",
+    tag: "Research and Intelligence",
     videoUrl: "https://www.youtube.com/embed/placeholder-analytics-revenue",
     complexityScore: 4,
     popularity: 254,
@@ -796,7 +790,7 @@ export const useCases: UseCase[] = [
     title: "Run automated cohort and retention analyses",
     description:
       "Understand exactly when and why users churn — with cohort breakdowns delivered to your team on a recurring schedule.",
-    category: "Analytics & Reporting",
+    tag: "Research and Intelligence",
     videoUrl: "https://www.youtube.com/embed/placeholder-analytics-cohort",
     complexityScore: 4,
     popularity: 97,
@@ -844,7 +838,7 @@ export const useCases: UseCase[] = [
     title: "Optimize existing content for CTR and dwell time",
     description:
       "Audit your live content library, find underperformers, and rewrite them to recover rankings and engagement.",
-    category: "Content Optimization",
+    tag: "Content Refresh",
     videoUrl: "https://www.youtube.com/embed/placeholder-content-optimization-ctr",
     complexityScore: 2,
     popularity: 356,
@@ -892,7 +886,7 @@ export const useCases: UseCase[] = [
     title: "A/B test landing page copy with AI-generated variants",
     description:
       "Generate dozens of landing page copy variants grounded in your best performers, then run structured tests at scale.",
-    category: "Content Optimization",
+    tag: "Content Refresh",
     videoUrl: "https://www.youtube.com/embed/placeholder-content-optimization-conversion",
     complexityScore: 3,
     popularity: 142,
@@ -939,7 +933,7 @@ export const useCases: UseCase[] = [
     title: "Monitor competitors and surface strategic signals weekly",
     description:
       "Track product changes, pricing moves, job postings, and content strategies across your top competitors — automatically.",
-    category: "Competitive Intelligence",
+    tag: "Research and Intelligence",
     videoUrl: "https://www.youtube.com/embed/placeholder-competitive-intel-monitoring",
     complexityScore: 2,
     popularity: 445,
@@ -987,7 +981,7 @@ export const useCases: UseCase[] = [
     title: "Generate and keep sales battlecards up to date",
     description:
       "Automatically refresh battlecards when competitors ship new features, change pricing, or shift messaging.",
-    category: "Competitive Intelligence",
+    tag: "Research and Intelligence",
     videoUrl: "https://www.youtube.com/embed/placeholder-competitive-intel-battlecards",
     complexityScore: 3,
     popularity: 231,
@@ -1035,7 +1029,7 @@ export const useCases: UseCase[] = [
     title: "Write research-backed long-form content at scale",
     description:
       "Produce thorough, well-researched blog posts, guides, and reports that are grounded in real sources and written in your voice.",
-    category: "Content Creation",
+    tag: "Content Creation",
     videoUrl: "https://www.youtube.com/embed/placeholder-content-creation-longform",
     complexityScore: 2,
     popularity: 498,
@@ -1083,7 +1077,7 @@ export const useCases: UseCase[] = [
     title: "Build a month of social content in an afternoon",
     description:
       "Generate a full content calendar — posts, captions, hooks, and hashtag sets — across LinkedIn, X, and Instagram from a single brief.",
-    category: "Content Creation",
+    tag: "Content Creation",
     videoUrl: "https://www.youtube.com/embed/placeholder-content-creation-social",
     complexityScore: 1,
     popularity: 298,
@@ -1130,7 +1124,7 @@ export const useCases: UseCase[] = [
     title: "Monitor brand mentions and sentiment across the web",
     description:
       "Get a daily digest of every place your brand is mentioned — with sentiment scores, source ranking, and suggested responses.",
-    category: "Brand Monitoring",
+    tag: "Research and Intelligence",
     videoUrl: "https://www.youtube.com/embed/placeholder-brand-monitoring-mentions",
     complexityScore: 2,
     popularity: 209,
@@ -1178,7 +1172,7 @@ export const useCases: UseCase[] = [
     title: "Respond to reviews at scale without losing the human touch",
     description:
       "Draft personalized, on-brand responses to every G2, Capterra, and App Store review — in minutes, not hours.",
-    category: "Brand Monitoring",
+    tag: "Research and Intelligence",
     videoUrl: "https://www.youtube.com/embed/placeholder-brand-monitoring-reviews",
     complexityScore: 1,
     popularity: 54,
@@ -1226,7 +1220,7 @@ export const useCases: UseCase[] = [
     title: "Automate personalized customer onboarding sequences",
     description:
       "Trigger the right onboarding steps for each customer based on their role, use case, and product activity — without manual intervention.",
-    category: "Workflow Automation",
+    tag: "Strategy and Analysis",
     videoUrl: "https://www.youtube.com/embed/placeholder-workflow-automation-onboarding",
     complexityScore: 4,
     popularity: 164,
@@ -1274,7 +1268,7 @@ export const useCases: UseCase[] = [
     title: "Connect your entire ops stack with AI-powered automation",
     description:
       "Replace manual handoffs and copy-paste workflows across your tools with intelligent automations that understand context.",
-    category: "Workflow Automation",
+    tag: "Strategy and Analysis",
     videoUrl: "https://www.youtube.com/embed/placeholder-workflow-automation-ops",
     complexityScore: 5,
     popularity: 412,
