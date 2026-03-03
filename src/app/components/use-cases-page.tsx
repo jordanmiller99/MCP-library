@@ -3,31 +3,8 @@ import { motion, AnimatePresence } from "motion/react";
 import { Link } from "react-router";
 import { useCases, categories, type UseCase } from "../data/use-cases";
 import { UseCaseCard } from "./use-case-card";
+import { useVotes } from "../hooks/useVotes";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-
-// ─── Customer attribution per use case ────────────────────────────────────────
-const attributions: Record<string, {
-  name: string;
-  title: string;
-  company: string;
-  domain: string;
-  initials: string;
-}> = {
-  "programmatic-seo": {
-    name: "Lucy Hoyle",
-    title: "Sr Content Engineer",
-    company: "Carta",
-    domain: "carta.com",
-    initials: "LH",
-  },
-  "seo-content-briefs": {
-    name: "Connor Beaulieu",
-    title: "Sr Manager, SEO & AEO",
-    company: "LegalZoom",
-    domain: "legalzoom.com",
-    initials: "CB",
-  },
-};
 
 // ─── Category palette ─────────────────────────────────────────────────────────
 const palette: Record<string, { bg: string; accent: string; text: string; border: string }> = {
@@ -45,7 +22,7 @@ const palette: Record<string, { bg: string; accent: string; text: string; border
   "Workflow Automation":     { bg: "#EEF4FF", accent: "#8898E8", text: "#1A2A7A",  border: "#4A5CC4" },
 };
 
-// ─── Inline SVG illustrations (portrait-friendly via xMidYMid slice) ──────────
+// ─── Inline SVG illustrations ─────────────────────────────────────────────────
 function SEOIllusSVG({ accent }: { accent: string }) {
   return (
     <svg width="100%" height="100%" viewBox="0 0 320 160" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
@@ -152,20 +129,80 @@ function Illus({ category, accent }: { category: string; accent: string }) {
   }
 }
 
-// ─── Coverflow carousel card (portrait) ──────────────────────────────────────
+// ─── Carousel upvote button ───────────────────────────────────────────────────
+function CarouselUpvote({ useCaseId, popularity }: { useCaseId: string; popularity: number }) {
+  const { count, hasVoted, vote } = useVotes(useCaseId, popularity);
+  return (
+    <button
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); vote(); }}
+      title={hasVoted ? "Already upvoted" : "Upvote"}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 5,
+        padding: "5px 10px",
+        borderRadius: 99,
+        border: hasVoted ? "1.5px solid #057A28" : "1.5px solid rgba(0,41,16,0.18)",
+        backgroundColor: hasVoted ? "#CCFFE0" : "rgba(255,255,255,0.9)",
+        color: hasVoted ? "#057A28" : "rgba(0,41,16,0.5)",
+        cursor: hasVoted ? "default" : "pointer",
+        fontFamily: "'JetBrains Mono', monospace",
+        fontSize: 11,
+        fontWeight: 600,
+        letterSpacing: "0.02em",
+        transition: "all 0.2s ease",
+        backdropFilter: "blur(4px)",
+      }}
+    >
+      <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
+        <path d="M5 1L9.33 8.5H0.67L5 1Z" fill={hasVoted ? "#057A28" : "rgba(0,41,16,0.4)"} />
+      </svg>
+      {count.toLocaleString()}
+    </button>
+  );
+}
+
+// ─── Coverflow carousel card ──────────────────────────────────────────────────
 function CarouselCard({
   useCase,
   isActive,
   onClick,
+  onVideoEnd,
 }: {
   useCase: UseCase;
   isActive: boolean;
   onClick?: () => void;
+  onVideoEnd?: () => void;
 }) {
   const pal = palette[useCase.category] || palette["Sales & CRM"];
-  const attribution = attributions[useCase.id] ?? null;
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const CARD_W = 380;
-  const CARD_H = attribution ? 580 : 540;
+  const CARD_H = useCase.attribution ? 580 : 540;
+
+  // Auto-advance: listen for YouTube postMessage when video ends
+  useEffect(() => {
+    if (!isActive || !onVideoEnd) return;
+
+    function handleMessage(e: MessageEvent) {
+      try {
+        const data = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
+        // YouTube iframe API fires event with info.playerState === 0 when ended
+        if (data?.event === "infoDelivery" && data?.info?.playerState === 0) {
+          onVideoEnd();
+        }
+      } catch {
+        // ignore non-JSON messages
+      }
+    }
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [isActive, onVideoEnd]);
+
+  // Build YouTube embed URL — enable JS API for ended-event detection
+  const videoId = useCase.videoUrl.split("/embed/")[1]?.split("?")[0] ?? "";
+  const embedSrc = isActive
+    ? `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&enablejsapi=1&rel=0&modestbranding=1`
+    : `https://www.youtube.com/embed/${videoId}?autoplay=0&enablejsapi=1&rel=0&modestbranding=1`;
 
   const inner = (
     <div
@@ -174,7 +211,7 @@ function CarouselCard({
         height: CARD_H,
         borderRadius: 24,
         overflow: "hidden",
-        cursor: isActive ? "pointer" : "pointer",
+        cursor: "pointer",
         display: "flex",
         flexDirection: "column",
         boxShadow: isActive
@@ -185,7 +222,7 @@ function CarouselCard({
       }}
       onClick={!isActive ? onClick : undefined}
     >
-      {/* Illustration — top ~62% */}
+      {/* Video / illustration — top ~62% */}
       <div
         style={{
           flex: "0 0 340px",
@@ -194,48 +231,28 @@ function CarouselCard({
           position: "relative",
         }}
       >
-        {/* Ambient blobs */}
-        <div
-          style={{
-            position: "absolute",
-            top: "-20%",
-            right: "-10%",
-            width: "60%",
-            paddingBottom: "60%",
-            borderRadius: "50%",
-            backgroundColor: pal.accent,
-            opacity: 0.35,
-            filter: "blur(36px)",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            bottom: "-15%",
-            left: "-5%",
-            width: "44%",
-            paddingBottom: "44%",
-            borderRadius: "50%",
-            backgroundColor: pal.accent,
-            opacity: 0.2,
-            filter: "blur(28px)",
-          }}
-        />
-        {/* SVG fills the panel via slice */}
-        <div style={{ position: "absolute", inset: 0 }}>
-          <Illus category={useCase.category} accent={pal.accent} />
-        </div>
-        {/* Bottom fade into white */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: 80,
-            background: `linear-gradient(to bottom, transparent, ${pal.bg})`,
-          }}
-        />
+        {isActive ? (
+          /* Active card: show video */
+          <iframe
+            ref={iframeRef}
+            src={embedSrc}
+            title={useCase.title}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" }}
+          />
+        ) : (
+          /* Inactive cards: show illustration */
+          <>
+            <div style={{ position: "absolute", top: "-20%", right: "-10%", width: "60%", paddingBottom: "60%", borderRadius: "50%", backgroundColor: pal.accent, opacity: 0.35, filter: "blur(36px)" }} />
+            <div style={{ position: "absolute", bottom: "-15%", left: "-5%", width: "44%", paddingBottom: "44%", borderRadius: "50%", backgroundColor: pal.accent, opacity: 0.2, filter: "blur(28px)" }} />
+            <div style={{ position: "absolute", inset: 0 }}>
+              <Illus category={useCase.category} accent={pal.accent} />
+            </div>
+            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 80, background: `linear-gradient(to bottom, transparent, ${pal.bg})` }} />
+          </>
+        )}
+
         {/* Category badge */}
         <span
           style={{
@@ -253,13 +270,19 @@ function CarouselCard({
             borderRadius: 6,
             padding: "4px 10px",
             opacity: 0.95,
+            zIndex: 2,
           }}
         >
           {useCase.category}
         </span>
+
+        {/* Upvote pill — top right */}
+        <div style={{ position: "absolute", top: 16, right: 16, zIndex: 2 }}>
+          <CarouselUpvote useCaseId={useCase.id} popularity={useCase.popularity} />
+        </div>
       </div>
 
-      {/* Content — bottom ~38% */}
+      {/* Content — bottom */}
       <div
         style={{
           flex: 1,
@@ -301,15 +324,15 @@ function CarouselCard({
               marginTop: 10,
             }}
           >
-            Explore recipe
+            Explore use case
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
               <path d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z" fill="#057A28"/>
             </svg>
           </div>
         )}
 
-        {/* ── Customer attribution strip ─────────────────────── */}
-        {attribution && (
+        {/* Customer attribution strip */}
+        {useCase.attribution && (
           <div
             style={{
               marginTop: "auto",
@@ -321,87 +344,46 @@ function CarouselCard({
               gap: 10,
             }}
           >
-            {/* Left: avatar + name/title */}
             <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-              {/* Initials avatar */}
-              <div
-                style={{
-                  flexShrink: 0,
-                  width: 32,
-                  height: 32,
-                  borderRadius: "50%",
-                  backgroundColor: pal.bg,
-                  border: `1.5px solid ${pal.border}`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontFamily: "'Inter', sans-serif",
-                  fontWeight: 700,
-                  fontSize: 10,
-                  color: pal.text,
-                  letterSpacing: "0.02em",
-                }}
-              >
-                {attribution.initials}
-              </div>
-              {/* Name + title */}
+              {useCase.attribution.headshot ? (
+                <img
+                  src={useCase.attribution.headshot}
+                  alt={useCase.attribution.name}
+                  style={{ flexShrink: 0, width: 32, height: 32, borderRadius: "50%", objectFit: "cover", border: `1.5px solid ${pal.border}` }}
+                />
+              ) : (
+                <div
+                  style={{
+                    flexShrink: 0, width: 32, height: 32, borderRadius: "50%",
+                    backgroundColor: pal.bg, border: `1.5px solid ${pal.border}`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 10,
+                    color: pal.text, letterSpacing: "0.02em",
+                  }}
+                >
+                  {useCase.attribution.initials}
+                </div>
+              )}
               <div style={{ minWidth: 0 }}>
-                <p
-                  style={{
-                    margin: 0,
-                    fontFamily: "'Inter', sans-serif",
-                    fontWeight: 600,
-                    fontSize: 12,
-                    color: "#002910",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  }}
-                >
-                  {attribution.name}
+                <p style={{ margin: 0, fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 12, color: "#002910", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {useCase.attribution.name}
                 </p>
-                <p
-                  style={{
-                    margin: 0,
-                    fontFamily: "'Inter', sans-serif",
-                    fontWeight: 400,
-                    fontSize: 11,
-                    color: "rgba(0,41,16,0.48)",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  }}
-                >
-                  {attribution.title}
+                <p style={{ margin: 0, fontFamily: "'Inter', sans-serif", fontWeight: 400, fontSize: 11, color: "rgba(0,41,16,0.48)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {useCase.attribution.title}
                 </p>
               </div>
             </div>
-
-            {/* Right: Brandfetch logo */}
-            <div
-              style={{
-                flexShrink: 0,
-                height: 28,
-                display: "flex",
-                alignItems: "center",
-                backgroundColor: "#F8FFFB",
-                borderRadius: 8,
-                padding: "4px 8px",
-                border: "1px solid rgba(0,41,16,0.07)",
-              }}
-            >
+            <div style={{ flexShrink: 0, height: 28, display: "flex", alignItems: "center", backgroundColor: "#F8FFFB", borderRadius: 8, padding: "4px 8px", border: "1px solid rgba(0,41,16,0.07)" }}>
               <img
-                src={`https://cdn.brandfetch.io/${attribution.domain}/w/160/h/40/logo`}
-                alt={attribution.company}
+                src={`https://cdn.brandfetch.io/${useCase.attribution.domain}/w/160/h/40/logo`}
+                alt={useCase.attribution.company}
                 style={{ height: 18, width: "auto", objectFit: "contain", maxWidth: 90 }}
                 onError={(e) => {
-                  // fallback: show company name text
                   const el = e.currentTarget;
                   el.style.display = "none";
                   const span = document.createElement("span");
-                  span.textContent = attribution.company;
-                  span.style.cssText =
-                    "font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#002910;letter-spacing:-0.01em;";
+                  span.textContent = useCase.attribution!.company;
+                  span.style.cssText = "font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#002910;letter-spacing:-0.01em;";
                   el.parentNode?.appendChild(span);
                 }}
               />
@@ -429,7 +411,6 @@ const VISIBLE_RANGE = 2.6;
 
 function CoverflowCarousel({ items }: { items: UseCase[] }) {
   const [current, setCurrent] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const goPrev = useCallback(() => setCurrent((i) => Math.max(0, i - 1)), []);
   const goNext = useCallback(() => setCurrent((i) => Math.min(items.length - 1, i + 1)), [items.length]);
@@ -446,10 +427,8 @@ function CoverflowCarousel({ items }: { items: UseCase[] }) {
 
   // Touch/swipe
   const touchStart = useRef(0);
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStart.current = e.touches[0].clientX;
-  };
-  const handleTouchEnd = (e: React.TouchEvent) => {
+  const handleTouchStart = (e: React.TouchEvent) => { touchStart.current = e.touches[0].clientX; };
+  const handleTouchEnd   = (e: React.TouchEvent) => {
     const delta = touchStart.current - e.changedTouches[0].clientX;
     if (Math.abs(delta) > 50) delta > 0 ? goNext() : goPrev();
   };
@@ -458,17 +437,9 @@ function CoverflowCarousel({ items }: { items: UseCase[] }) {
     <div style={{ userSelect: "none" }}>
       {/* Stage */}
       <div
-        ref={containerRef}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        style={{
-          position: "relative",
-          height: 620,
-          overflow: "hidden",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
+        style={{ position: "relative", height: 620, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}
       >
         {items.map((item, i) => {
           const offset = i - current;
@@ -497,6 +468,7 @@ function CoverflowCarousel({ items }: { items: UseCase[] }) {
                 useCase={item}
                 isActive={i === current}
                 onClick={() => setCurrent(i)}
+                onVideoEnd={i === current ? goNext : undefined}
               />
             </div>
           );
@@ -504,26 +476,12 @@ function CoverflowCarousel({ items }: { items: UseCase[] }) {
       </div>
 
       {/* Controls */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 20,
-          marginTop: 8,
-        }}
-      >
-        {/* Prev */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 20, marginTop: 8 }}>
         <button
           onClick={goPrev}
           disabled={current === 0}
           style={{
-            width: 40,
-            height: 40,
-            borderRadius: "50%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            width: 40, height: 40, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
             border: "1.5px solid rgba(0,41,16,0.18)",
             backgroundColor: current === 0 ? "transparent" : "white",
             color: current === 0 ? "rgba(0,41,16,0.2)" : "#002910",
@@ -561,17 +519,11 @@ function CoverflowCarousel({ items }: { items: UseCase[] }) {
           })}
         </div>
 
-        {/* Next */}
         <button
           onClick={goNext}
           disabled={current === items.length - 1}
           style={{
-            width: 40,
-            height: 40,
-            borderRadius: "50%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            width: 40, height: 40, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
             border: "1.5px solid rgba(0,41,16,0.18)",
             backgroundColor: current === items.length - 1 ? "transparent" : "white",
             color: current === items.length - 1 ? "rgba(0,41,16,0.2)" : "#002910",
@@ -585,16 +537,7 @@ function CoverflowCarousel({ items }: { items: UseCase[] }) {
       </div>
 
       {/* Counter */}
-      <p
-        style={{
-          textAlign: "center",
-          marginTop: 12,
-          fontFamily: "'JetBrains Mono', monospace",
-          fontSize: 11,
-          color: "rgba(0,41,16,0.35)",
-          letterSpacing: "0.07em",
-        }}
-      >
+      <p style={{ textAlign: "center", marginTop: 12, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "rgba(0,41,16,0.35)", letterSpacing: "0.07em" }}>
         {String(current + 1).padStart(2, "0")} / {String(items.length).padStart(2, "0")}
       </p>
     </div>
@@ -611,10 +554,12 @@ useCases.forEach((uc) => {
 export function UseCasesPage() {
   const [activeCategory, setActiveCategory] = useState("All");
 
-  const filteredUseCases =
+  // Default sort: most popular (by popularity seed, which reflects votes)
+  const filteredUseCases = (
     activeCategory === "All"
-      ? useCases
-      : useCases.filter((uc) => uc.category === activeCategory);
+      ? [...useCases]
+      : useCases.filter((uc) => uc.category === activeCategory)
+  ).sort((a, b) => b.popularity - a.popularity);
 
   return (
     <div className="pb-32" style={{ backgroundColor: "#F8FFFB" }}>
@@ -647,7 +592,7 @@ export function UseCasesPage() {
             }}
           >
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#057A28]" style={{ animation: "pulse 2s ease-in-out infinite" }}/>
-            AirOps MCP Kitchen
+            AirOps MCP Library
           </div>
 
           {/* H1 */}
@@ -661,42 +606,52 @@ export function UseCasesPage() {
               letterSpacing: "-0.025em",
             }}
           >
-            Selected and popular
+            See what the best
             <br />
-            <span style={{ color: "#057A28" }}>recipes</span> right now
+            marketers are <span style={{ color: "#057A28" }}>building</span>
           </h1>
 
           <p
             className="mx-auto mt-6 max-w-xl text-[#002910]/55"
             style={{ fontFamily: "'Inter', sans-serif", fontSize: 16, lineHeight: 1.75 }}
           >
-            Browse our MCP workflow recipes — each one a production-ready AI workflow
-            you can deploy in minutes.
+            The bleeding edge of AI-powered marketing workflows — built by real teams, ready to deploy in minutes.
           </p>
+
+          {/* CTAs */}
+          <div className="mt-8 flex items-center justify-center gap-3 flex-wrap">
+            <a
+              href="https://app.airops.com/sign-up"
+              className="rounded-full bg-[#002910] px-6 py-3 text-[#00FF64] no-underline transition-all duration-200 hover:brightness-110"
+              style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 700 }}
+            >
+              Start building free →
+            </a>
+            <a
+              href="https://docs.airops.com"
+              className="rounded-full border px-6 py-3 text-[#002910] no-underline transition-all duration-200 hover:bg-[#002910]/5"
+              style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: 14,
+                fontWeight: 600,
+                borderColor: "rgba(0,41,16,0.2)",
+              }}
+            >
+              Read the docs
+            </a>
+          </div>
         </div>
       </div>
 
-      {/* ── Coverflow Carousel ────────────────────────────────── */}
-      <div
-        className="relative"
-        style={{ backgroundColor: "#F8FFFB", paddingTop: 32, paddingBottom: 48 }}
-      >
+      {/* ── Coverflow Carousel (the feed) ─────────────────────── */}
+      <div className="relative" style={{ backgroundColor: "#F8FFFB", paddingTop: 32, paddingBottom: 48 }}>
         <CoverflowCarousel items={useCases} />
       </div>
 
       {/* ── Divider ──────────────────────────────────────────── */}
-      <div
-        className="mx-auto mb-12"
-        style={{
-          maxWidth: 1152,
-          height: 1,
-          backgroundColor: "rgba(0,41,16,0.08)",
-          margin: "0 auto 48px",
-          padding: "0 24px",
-        }}
-      />
+      <div className="mx-auto mb-12" style={{ maxWidth: 1152, height: 1, backgroundColor: "rgba(0,41,16,0.08)", margin: "0 auto 48px", padding: "0 24px" }} />
 
-      {/* ── All recipes grid ──────────────────────────────────── */}
+      {/* ── All workflows grid ─────────────────────────────────── */}
       <div className="mx-auto max-w-6xl px-6">
         {/* Section label */}
         <div className="mb-8 flex items-center gap-3">
@@ -709,19 +664,24 @@ export function UseCasesPage() {
               letterSpacing: "-0.02em",
             }}
           >
-            All recipes
+            All workflows
           </h2>
           <div style={{ flex: 1, height: 1, backgroundColor: "rgba(0,41,16,0.08)" }}/>
-          <span
+          {/* Sort label */}
+          <div
+            className="flex items-center gap-1.5"
             style={{
               fontFamily: "'JetBrains Mono', monospace",
               fontSize: 11,
-              color: "rgba(0,41,16,0.35)",
+              color: "rgba(0,41,16,0.45)",
               letterSpacing: "0.05em",
             }}
           >
-            {filteredUseCases.length} of {useCases.length}
-          </span>
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <path d="M5 1L9.33 8.5H0.67L5 1Z" fill="rgba(0,41,16,0.35)" />
+            </svg>
+            Most popular
+          </div>
         </div>
 
         {/* Category pills */}
@@ -809,7 +769,7 @@ export function UseCasesPage() {
             </h3>
           </div>
           <a
-            href="https://www.airops.com"
+            href="https://app.airops.com/sign-up"
             className="shrink-0 rounded-full bg-[#00FF64] px-7 py-3.5 text-[#002910] no-underline transition-all duration-200 hover:brightness-95"
             style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 700 }}
           >
