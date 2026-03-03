@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Link } from "react-router";
-import { useCases, categories, type UseCase } from "../data/use-cases";
+import { useCases, type UseCase } from "../data/use-cases";
 import { UseCaseCard } from "./use-case-card";
 import { useVotes } from "../hooks/useVotes";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -117,8 +117,8 @@ function DataIllusSVG({ accent }: { accent: string }) {
     </svg>
   );
 }
-function Illus({ category, accent }: { category: string; accent: string }) {
-  switch (category) {
+function Illus({ tag, accent }: { tag: string; accent: string }) {
+  switch (tag) {
     case "SEO & Content":    return <SEOIllusSVG accent={accent}/>;
     case "Sales & CRM":      return <SalesIllusSVG accent={accent}/>;
     case "Engineering":      return <EngineeringIllusSVG accent={accent}/>;
@@ -174,7 +174,7 @@ function CarouselCard({
   onClick?: () => void;
   onVideoEnd?: () => void;
 }) {
-  const pal = palette[useCase.category] || palette["Sales & CRM"];
+  const pal = palette[useCase.tag] || palette["Sales & CRM"];
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const CARD_W = 380;
   const CARD_H = useCase.attribution ? 580 : 540;
@@ -247,7 +247,7 @@ function CarouselCard({
             <div style={{ position: "absolute", top: "-20%", right: "-10%", width: "60%", paddingBottom: "60%", borderRadius: "50%", backgroundColor: pal.accent, opacity: 0.35, filter: "blur(36px)" }} />
             <div style={{ position: "absolute", bottom: "-15%", left: "-5%", width: "44%", paddingBottom: "44%", borderRadius: "50%", backgroundColor: pal.accent, opacity: 0.2, filter: "blur(28px)" }} />
             <div style={{ position: "absolute", inset: 0 }}>
-              <Illus category={useCase.category} accent={pal.accent} />
+              <Illus tag={useCase.tag} accent={pal.accent} />
             </div>
             <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 80, background: `linear-gradient(to bottom, transparent, ${pal.bg})` }} />
           </>
@@ -273,7 +273,7 @@ function CarouselCard({
             zIndex: 2,
           }}
         >
-          {useCase.category}
+          {useCase.tag}
         </span>
 
         {/* Upvote pill — top right */}
@@ -544,22 +544,10 @@ function CoverflowCarousel({ items }: { items: UseCase[] }) {
   );
 }
 
-// ─── Category count helper ────────────────────────────────────────────────────
-const categoryCount: Record<string, number> = {};
-useCases.forEach((uc) => {
-  categoryCount[uc.category] = (categoryCount[uc.category] || 0) + 1;
-});
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export function UseCasesPage() {
-  const [activeCategory, setActiveCategory] = useState("All");
-
   // Default sort: most popular (by popularity seed, which reflects votes)
-  const filteredUseCases = (
-    activeCategory === "All"
-      ? [...useCases]
-      : useCases.filter((uc) => uc.category === activeCategory)
-  ).sort((a, b) => b.popularity - a.popularity);
+  const filteredUseCases = [...useCases].sort((a, b) => b.popularity - a.popularity);
 
   return (
     <div className="pb-32" style={{ backgroundColor: "#F8FFFB" }}>
@@ -684,39 +672,61 @@ export function UseCasesPage() {
           </div>
         </div>
 
-        {/* Category pills */}
+        {/* Filter dropdowns */}
         <div className="mb-10 flex flex-wrap gap-2">
-          {categories.map((cat) => {
-            const isActive = activeCategory === cat;
-            const count = cat === "All" ? useCases.length : categoryCount[cat] || 0;
-            return (
+          {[
+            {
+              label: "Jobs to be done",
+              options: ["Content Creation", "Content Refresh", "Search and AI Optimization", "Content Repurposing", "Strategy and Analysis", "Research and Intelligence"],
+            },
+            {
+              label: "Product",
+              options: ["MCP", "Workflows", "Grids", "Power Agents"],
+            },
+            {
+              label: "Platforms / integrations",
+              options: ["Project Management", "CMS"],
+            },
+            {
+              label: "Creator",
+              options: ["AirOps", "Community"],
+            },
+            {
+              label: "Industry",
+              options: ["Ecommerce", "SaaS", "Travel", "Finance", "Education", "Health"],
+            },
+          ].map((dropdown) => (
+            <div key={dropdown.label} className="relative group">
               <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className="cursor-pointer rounded-full px-4 py-2 transition-all duration-200"
+                disabled
+                className="flex cursor-not-allowed items-center gap-1.5 rounded-full px-4 py-2"
                 style={{
                   fontFamily: "'Inter', sans-serif",
                   fontWeight: 500,
                   fontSize: 13.5,
-                  backgroundColor: isActive ? "#002910" : "white",
-                  color: isActive ? "#00FF64" : "#002910",
-                  border: isActive ? "1.5px solid #002910" : "1.5px solid rgba(0,41,16,0.15)",
+                  backgroundColor: "white",
+                  color: "rgba(0,41,16,0.4)",
+                  border: "1.5px solid rgba(0,41,16,0.12)",
                 }}
               >
-                {cat}
-                <span
-                  className="ml-1.5 rounded-full px-1.5 py-0.5 text-[10px]"
-                  style={{
-                    fontFamily: "'JetBrains Mono', monospace",
-                    backgroundColor: isActive ? "rgba(0,255,100,0.15)" : "rgba(0,41,16,0.06)",
-                    color: isActive ? "#00FF64" : "#002910",
-                  }}
-                >
-                  {count}
-                </span>
+                {dropdown.label}
+                <svg width="10" height="6" viewBox="0 0 10 6" fill="none" style={{ opacity: 0.4 }}>
+                  <path d="M1 1L5 5L9 1" stroke="rgba(0,41,16,0.8)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </button>
-            );
-          })}
+              {/* Coming soon tooltip */}
+              <div
+                className="pointer-events-none absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  backgroundColor: "#002910",
+                  color: "#00FF64",
+                }}
+              >
+                Coming soon
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Grid */}
